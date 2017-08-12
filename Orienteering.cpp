@@ -6,152 +6,152 @@
 #include <fstream>
 using namespace std;
 
-struct punkt
+struct point
 {
 	double x,y,w;
 };
 
 typedef vector <int> cycle;
 
-double punktDystans(punkt a,punkt b)
+double pointDistance(point a,point b)
 {
 	return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
 }
 
-class Droga
+class Way
 {
 	private:
-		double dlugosc,wartosc;
-		cycle cykl;
+		double length,value;
+		cycle my_cycle;
 	public:
-		Droga()
+		Way()
 		{
-			dlugosc=wartosc=0;
+			length=value=0;
 		}
-		double getDlugosc()
+		double getLength()
 		{
-			return dlugosc;
+			return length;
 		}
-		double getWartosc()
+		double getValue()
 		{
-			return wartosc;
+			return value;
 		}
-		cycle getCykl()
+		cycle getCycle()
 		{
-			return cykl;
+			return my_cycle;
 		}
-		void setCykl(cycle cy)
+		void setCycle(cycle cy)
 		{
-			cykl=cy;
+			my_cycle=cy;
 		}
-		void liczDlu(vector<vector<double> > dyst)
+		void calcDist(vector<vector<double> > dist)
 		{
-			dlugosc=0;
-			if(cykl.size()<2)
+			length=0;
+			if(my_cycle.size()<2)
 				return;
 
-			for(int i=0;i<cykl.size()-1;i++)
-				dlugosc+=dyst[cykl[i]][cykl[i+1]];
+			for(int i=0;i<my_cycle.size()-1;i++)
+				length+=dist[my_cycle[i]][my_cycle[i+1]];
 
-			dlugosc+=dyst[cykl[cykl.size()-1]][cykl[0]];
+			length+=dist[my_cycle[my_cycle.size()-1]][my_cycle[0]];
 		}
-		void liczWar(punkt tabp[])
+		void calcScore(point arrp[])
 		{
-			wartosc=0;
-			if(cykl.size()==0)
+			value=0;
+			if(my_cycle.size()==0)
 				return;
 
-			for(unsigned int i=0;i<cykl.size();i++)
-				wartosc+=tabp[cykl[i]].w;
+			for(unsigned int i=0;i<my_cycle.size();i++)
+				value+=arrp[my_cycle[i]].w;
 		}
 };
 
-struct osobnik
+struct individual
 {
-	Droga droga;
-	double wynik;
+	Way way;
+	double score;
 };
 
-void pokazOsobnik(osobnik os)
+void showIndividual(individual os)
 {
-	cout<<"War: "<<os.droga.getWartosc();
-	cout<<" Dlu: "<<os.droga.getDlugosc();
-	cout<<" Cy: ";
-	cycle cy=os.droga.getCykl();
+	cout<<"Score: "<<os.way.getValue();
+	cout<<" Dist: "<<os.way.getLength();
+	cout<<" Cycle: ";
+	cycle cy=os.way.getCycle();
 
 	for(int i=0;i<cy.size();i++)
 		cout<<cy[i]<<",";
-	cout<<" Wy: "<<os.wynik;
+	cout<<" Score: "<<os.score;
 }
 
-osobnik fitness(osobnik os,double limit)
+individual fitness(individual os,double limit)
 {
-	double wy;
-	double d=os.droga.getDlugosc();
-	double wa=os.droga.getWartosc();
+	double score;
+	double d=os.way.getLength();
+	double wayValue=os.way.getValue();
 
 	if(d>limit)
 	{
-		wy=0;
+		score=0;
 	}
 	else
-	wy=wa;
+		score=wayValue;
 
-	os.wynik=wy;
+	os.score=score;
 
 	return os;
 }
 
-osobnik losOsobnik(int ilePkt, double limit, vector<vector<double> > odleglosci)
+individual randIndividual(int Points, double limit, vector<vector<double> > distances)
 {
-	double dyst=0;
-	int uzyte[ilePkt]={0};
-	osobnik ostemp;
+	double dist=0;
+	int used[Points]={0};
+	individual ostemp;
 	cycle ctemp;
-	int losnr;
+	int randomNum;
 
-	for(int i=0;dyst<limit;i++)
+	for(int i=0;dist<limit;i++)
 	{
 		do
 		{
-		losnr=rand()%ilePkt;
-		}while(uzyte[losnr]==1);
+		randomNum=rand()%Points;
+		}while(used[randomNum]==1);
 
-		uzyte[losnr]=1;
+		used[randomNum]=1;
 		if(i>0)
-			dyst=dyst-odleglosci[ctemp[i-1]][ctemp[0]]+odleglosci[ctemp[i-1]][losnr]+odleglosci[losnr][ctemp[0]];
-		ctemp.push_back(losnr);
+			dist=dist-distances[ctemp[i-1]][ctemp[0]]+distances[ctemp[i-1]][randomNum]+distances[randomNum][ctemp[0]];
+		ctemp.push_back(randomNum);
 	}
 	ctemp.erase(ctemp.begin()+ctemp.size()-1);
 
-	ostemp.droga.setCykl(ctemp);
+	ostemp.way.setCycle(ctemp);
 	return ostemp;
 }
 
-void usunPowt(osobnik *os,int ilePkt)
+void removeRepeating(individual *os,int Points)
 {
-	vector <int> cy=(*os).droga.getCykl();
-	int tab[ilePkt]={0};
-	int usun[cy.size()]={0};
+	vector <int> cy=(*os).way.getCycle();
+	int arr[Points]={0};
+	int del[cy.size()]={0};
 
 	for(int i=0;i<cy.size();i++)
-		if(tab[cy[i]]==1)
-			usun[i]=1;
+		if(arr[cy[i]]==1)
+			del[i]=1;
 		else
-			tab[cy[i]]=1;
+			arr[cy[i]]=1;
 
 	for(int i=cy.size()-1;i>=0;i--)
-		if(usun[i]==1)
+		if(del[i]==1)
 			cy.erase(cy.begin()+i);
-	(*os).droga.setCykl(cy);
+	(*os).way.setCycle(cy);
 }
 
-void cross(osobnik* os1, osobnik* os2, int ilePkt) //ilePkt- ilo�� punkt�w grafu
+void cross(individual* os1, individual* os2, int Points) 
 {
 	int p1,p2,k1,k2;
 	cycle c1,c2;
-	c1=(*os1).droga.getCykl();
-	c2=(*os2).droga.getCykl();
+	c1=(*os1).way.getCycle();
+	c2=(*os2).way.getCycle();
 
 	if(c1.size()<2 || c2.size()<2)
 		return;
@@ -168,117 +168,117 @@ void cross(osobnik* os1, osobnik* os2, int ilePkt) //ilePkt- ilo�� punkt�w
 
 	cycle tmp1,tmp2;
 
-	int uzyto1[ilePkt]={0}; //uzyto w tmp1
-	int uzyto2[ilePkt]={0}; //uzyto w tmp2
+	int used1[Points]={0}; //used in tmp1
+	int used2[Points]={0}; //used in tmp2
 
-	//wyliczenie tmp1
+	//calculating tmp1
 	for(int i=0;i<=p1;i++)
 	{
-		if(uzyto1[c1[i]]==0)
+		if(used1[c1[i]]==0)
 			tmp1.push_back(c1[i]);
-		uzyto1[c1[i]]=1;
+		used1[c1[i]]=1;
 
 	}
 
 	for(int i=p2;i<=k2;i++)
 	{
-		if(uzyto1[c2[i]]==0)
+		if(used1[c2[i]]==0)
 			tmp1.push_back(c2[i]);
-		uzyto1[c2[i]]=1;
+		used1[c2[i]]=1;
 
 	}
 
 	for(int i=k1;i<c1.size();i++)
 	{
-		if(uzyto1[c1[i]]==0)
+		if(used1[c1[i]]==0)
 			tmp1.push_back(c1[i]);
-		uzyto1[c1[i]]=1;
+		used1[c1[i]]=1;
 
 	}
 
-	//wyliczenie tmp2
+	//calculating tmp2
 	for(int i=0;i<=p2;i++)
 	{
-		if(uzyto2[c2[i]]==0)
+		if(used2[c2[i]]==0)
 			tmp2.push_back(c2[i]);
-		uzyto2[c2[i]]=1;
+		used2[c2[i]]=1;
 
 	}
 
 	for(int i=p1;i<=k1;i++)
 	{
-		if(uzyto2[c1[i]]==0)
+		if(used2[c1[i]]==0)
 			tmp2.push_back(c1[i]);
-		uzyto1[c1[i]]=1;
+		used1[c1[i]]=1;
 
 	}
 
 	for(int i=k2;i<c2.size();i++)
 	{
-		if(uzyto2[c2[i]]==0)
+		if(used2[c2[i]]==0)
 			tmp2.push_back(c2[i]);
-		uzyto1[c2[i]]=1;
+		used1[c2[i]]=1;
 
 	}
 
-	(*os1).droga.setCykl(tmp1);
-	(*os2).droga.setCykl(tmp2);
+	(*os1).way.setCycle(tmp1);
+	(*os2).way.setCycle(tmp2);
 }
 
-void mutation(osobnik *os,int ilePkt,vector<vector<double> >dyst)
+void mutation(individual *os,int Points,vector<vector<double> >dist)
 {
-	vector <int> cy=os->droga.getCykl();
-	int uzyte [ilePkt]={0};
+	vector <int> cy=os->way.getCycle();
+	int used [Points]={0};
 
 	for(unsigned int i=0;i<cy.size();i++)
-		uzyte[cy[i]]=1;
+		used[cy[i]]=1;
 
 	int los;
 
 	do
 	{
-		los=rand()%ilePkt;
-	}while(uzyte[los]==1);
+		los=rand()%Points;
+	}while(used[los]==1);
 
-	double mindyst=dyst[los][cy[0]]+dyst[los][cy[cy.size()-1]];
-	double minnr=0;
+	double mindist=dist[los][cy[0]]+dist[los][cy[cy.size()-1]];
+	double minNum=0;
 
 	for(unsigned int i=1;i<cy.size();i++)
 	{
-		if(dyst[los][cy[i]]+dyst[los][cy[i-1]]>mindyst)
+		if(dist[los][cy[i]]+dist[los][cy[i-1]]>mindist)
 		{
-			mindyst=dyst[los][cy[i]]+dyst[los][cy[cy.size()-1]];
-			minnr=i;
+			mindist=dist[los][cy[i]]+dist[los][cy[cy.size()-1]];
+			minNum=i;
 		}
 	}
 
-	cy.insert(cy.begin()+minnr,los);
+	cy.insert(cy.begin()+minNum,los);
 
-	os->droga.setCykl(cy);
+	os->way.setCycle(cy);
 
 }
 
-void zapis(osobnik a, int limit)
+void save(individual a, int limit)
 {
-	fstream plik;
-	plik.open("solutions.txt", ios::out | ios::app);
+	fstream file;
+	file.open("solutions.txt", ios::out | ios::app);
 
-	plik<<endl<<"Limit: "<<limit<<endl;
-	plik<<"Dystans: "<<a.droga.getDlugosc()<<endl;
-	plik<<"Wynik: "<<a.droga.getWartosc()<<endl;
-	plik<<"Droga: ";
-	vector <int> v1=a.droga.getCykl();
+	file<<endl<<"Limit: "<<limit<<endl;
+	file<<"Distance: "<<a.way.getLength()<<endl;
+	file<<"Wynik: "<<a.way.getValue()<<endl;
+	file<<"Way: ";
+	vector <int> v1=a.way.getCycle();
 
 	for(unsigned int i=0;i<v1.size();i++)
-		plik<<v1[i]<<",";
-	plik<<endl;
+		file<<v1[i]<<",";
+	file<<endl;
 
-	plik.close();
+	file.close();
 }
 
-void optimize(osobnik *oso, vector<vector<double> > dys)
+void optimize(individual *oso, vector<vector<double> > dys)
 {
-	vector <int> cy=(*oso).droga.getCykl();
+	vector <int> cy=(*oso).way.getCycle();
 
 	if(cy.size()<3)
 		return;
@@ -298,21 +298,21 @@ void optimize(osobnik *oso, vector<vector<double> > dys)
 			}
 		}
 	}
-	oso->droga.setCykl(cy);
+	oso->way.setCycle(cy);
 
 }
 
-void sort(vector <osobnik> *tab)
+void sort(vector <individual> *arr)
 {
-	for(unsigned int i=0;i<tab->size();i++)
-		for(unsigned int j=i+1;j<tab->size();j++)
-			if((*tab)[i].wynik<(*tab)[j].wynik)
-				swap((*tab)[i],(*tab)[j]);
+	for(unsigned int i=0;i<arr->size();i++)
+		for(unsigned int j=i+1;j<arr->size();j++)
+			if((*arr)[i].score<(*arr)[j].score)
+				swap((*arr)[i],(*arr)[j]);
 }
 
-void permut(osobnik *os1)
+void permut(individual *os1)
 {
-	vector <int> vt=(*os1).droga.getCykl();
+	vector <int> vt=(*os1).way.getCycle();
 
 	int los;
 
@@ -321,156 +321,156 @@ void permut(osobnik *os1)
 		los=rand()%i;
 		swap(vt[i],vt[los]);
 	}
-	(*os1).droga.setCykl(vt);
+	(*os1).way.setCycle(vt);
 }
 
 int main()
 {
 	srand(time(NULL));
 	int n; //ilosc wierzcholkow grafu
-	int rozPok=100; //ilosc osobnikow w pokoleniu
-	double Tmax; //limit odleglosci
+	int generationSize=100; //ilosc individualow w pokoleniu
+	double Tmax; //limit distances
 	int ilec=100;
 	int szansamut,szansatop,powt,szansapermut,ileKrzyz,ilePok;
-	ileKrzyz=rozPok/4;
+	ileKrzyz=generationSize/4;
 	powt=200;
 	szansamut=35;
 	szansatop=80;
 	szansapermut=30;
 	ilePok=1000;
-	fstream plik;
-	plik.open("data.txt", ios::in);
+	fstream file;
+	file.open("data.txt", ios::in);
 
 	unsigned long long int psz=0;
 
-	plik>>n;
-	plik>>Tmax;
+	file>>n;
+	file>>Tmax;
 
-	punkt punkty[n]; //tablica z wierzcholkami
-	vector<vector<double> > odleglosci(n,vector<double>(n)); //wektor przechowujacy odleglosci miedzy punktami
+	point points[n]; //arrlica z wierzcholkami
+	vector<vector<double> > distances(n,vector<double>(n)); //wektor przechowujacy distances miedzy pointami
 
 	for(int i=0;i<n;i++)
 	{
-		plik>>punkty[i].x;
-		plik>>punkty[i].y;
-		plik>>punkty[i].w;
+		file>>points[i].x;
+		file>>points[i].y;
+		file>>points[i].w;
 	}
 
-	plik.close();
+	file.close();
 
 	for(int i=0;i<n;i++)
 		for(int j=0;j<n;j++)
-			odleglosci[i][j]=(int)punktDystans(punkty[i],punkty[j]);
+			distances[i][j]=(int)pointDistance(points[i],points[j]);
 
-	osobnik top,poptop,losos;
+	individual top,poptop,losos;
 	int nrzmiany;
 
-	vector <osobnik> pokolenie;
+	vector <individual> generation;
 
 for(int k=0;k<50;k++)
 {
 	psz=0;
 
-	for(int i=0;i<rozPok;i++)
+	for(int i=0;i<generationSize;i++)
 	{
-		top=losOsobnik(n,Tmax,odleglosci);
-		pokolenie.push_back(top);
+		top=randIndividual(n,Tmax,distances);
+		generation.push_back(top);
 	}
 
-	for(int i=0;i<rozPok;i++)
-		optimize(&(pokolenie[i]),odleglosci);
+	for(int i=0;i<generationSize;i++)
+		optimize(&(generation[i]),distances);
 
-	top=losOsobnik(n,Tmax,odleglosci);
-	top.droga.liczDlu(odleglosci);
-	top.droga.liczWar(punkty);
+	top=randIndividual(n,Tmax,distances);
+	top.way.calcDist(distances);
+	top.way.calcScore(points);
 	top=fitness(top,Tmax);
 
-	int los1;
+	int randomFirst;
 
 	while(psz<ilePok)
 	{
 		poptop=top;
 
-		for(int i=0;i<rozPok;i++)
+		for(int i=0;i<generationSize;i++)
 		{
-			los1=rand()%100;
-			if(los1<szansamut)
-				mutation(&(pokolenie[i]),n,odleglosci);
+			randomFirst=rand()%100;
+			if(randomFirst<szansamut)
+				mutation(&(generation[i]),n,distances);
 
-			los1=rand()%100;
-			if(los1<szansapermut)
-				permut(&(pokolenie[i]));
+			randomFirst=rand()%100;
+			if(randomFirst<szansapermut)
+				permut(&(generation[i]));
 		}
 
-		for(int i=0;i<rozPok;i++)
+		for(int i=0;i<generationSize;i++)
 		{
-			usunPowt(&(pokolenie[i]),n);
-			optimize(&(pokolenie[i]),odleglosci);
-			pokolenie[i].droga.liczDlu(odleglosci);
-			pokolenie[i].droga.liczWar(punkty);
-			pokolenie[i]=fitness(pokolenie[i],Tmax);
+			removeRepeating(&(generation[i]),n);
+			optimize(&(generation[i]),distances);
+			generation[i].way.calcDist(distances);
+			generation[i].way.calcScore(points);
+			generation[i]=fitness(generation[i],Tmax);
 			do
 			{
-				if(pokolenie[i].wynik==0)
-					pokolenie[i]=losOsobnik(n,Tmax,odleglosci);
-				pokolenie[i].droga.liczDlu(odleglosci);
-				pokolenie[i].droga.liczWar(punkty);
-				pokolenie[i]=fitness(pokolenie[i],Tmax);
-			}while(pokolenie[i].wynik==0);
+				if(generation[i].score==0)
+					generation[i]=randIndividual(n,Tmax,distances);
+				generation[i].way.calcDist(distances);
+				generation[i].way.calcScore(points);
+				generation[i]=fitness(generation[i],Tmax);
+			}while(generation[i].score==0);
 		}
 
-		sort(&pokolenie);
-		if(pokolenie[0].wynik>top.wynik)
-				top=pokolenie[0];
+		sort(&generation);
+		if(generation[0].score>top.score)
+				top=generation[0];
 
-		los1=rand()%100;
-		if(los1<szansatop)
+		randomFirst=rand()%100;
+		if(randomFirst<szansatop)
 		{
-			pokolenie[rozPok-1]=top;
-			mutation(&(pokolenie[rozPok-1]),n,odleglosci);
-			optimize(&(pokolenie[rozPok-1]),odleglosci);
+			generation[generationSize-1]=top;
+			mutation(&(generation[generationSize-1]),n,distances);
+			optimize(&(generation[generationSize-1]),distances);
 		}
 
 		for(int i=0;i<ileKrzyz;i++)
 		{
-			los1=rand()%rozPok;
-			if(i!=los1)
-			cross(&(pokolenie[i]),&(pokolenie[los1]),n);
+			randomFirst=rand()%generationSize;
+			if(i!=randomFirst)
+			cross(&(generation[i]),&(generation[randomFirst]),n);
 		}
 
-		if(poptop.wynik!=top.wynik || psz%ilec==0)
+		if(poptop.score!=top.score || psz%ilec==0)
 		{
 			double s=0;
-			for(int i=0;i<rozPok;i++)
-				s+=pokolenie[i].wynik;
-			s/=rozPok;
+			for(int i=0;i<generationSize;i++)
+				s+=generation[i].score;
+			s/=generationSize;
 
 			cout<<psz<<". AvgF:"<<s<<" Top:";
-			pokazOsobnik(top);
+			showIndividual(top);
 			cout<<endl;
 		}
 
-		if(poptop.wynik!=top.wynik)
+		if(poptop.score!=top.score)
 				nrzmiany=psz;
 
 		if(psz-nrzmiany>powt)
 		{
 			cout<<"Za dlugo nie bylo zmian, losujemy od nowa!"<<endl;
 			nrzmiany=psz;
-			for(int i=0;i<rozPok-1;i++)
+			for(int i=0;i<generationSize-1;i++)
 			{
-				losos=losOsobnik(n,Tmax,odleglosci);
-				pokolenie[i]=losos;
+				losos=randIndividual(n,Tmax,distances);
+				generation[i]=losos;
 			}
-			pokolenie[rozPok-1]=top;
-			permut(&(pokolenie[rozPok-1]));
-			optimize(&(pokolenie[rozPok-1]),odleglosci);
+			generation[generationSize-1]=top;
+			permut(&(generation[generationSize-1]));
+			optimize(&(generation[generationSize-1]),distances);
 		}
 		psz++;
 	}
 
 cout<<endl<<"Zapis"<<endl<<endl;
-zapis(top,Tmax);
+save(top,Tmax);
 }
 
 int koniec;
